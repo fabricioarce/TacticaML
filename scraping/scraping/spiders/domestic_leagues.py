@@ -63,5 +63,5 @@ class DomesticLeaguesSpider(scrapy.Spider):
 
     def closed(self, reason):
         # Save the data to a JSON file when the spider is closed
-        with open("domestic_leagues_data.json", "w") as f:
+        with open("/data/domestic_leagues_data.json", "w") as f:
             json.dump(self.data, f, indent=4)
