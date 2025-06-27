@@ -55,12 +55,11 @@ class DomesticLeaguesSpider(scrapy.Spider):
             match = re.search(r'/(\d{4}-\d{2})', season_url)
             season_name = match.group(1) if match else "Unknown Season"
 
-            if league_name not in self.data:
-                self.data[league_name] = {
-                    "category": category,
-                    "seasons": {}
-                }
-            self.data[league_name]["seasons"][season_name] = full_url
+        if country not in self.data:
+            self.data[country] = {}
+        if league_name not in self.data[country]:
+            self.data[country][league_name] = {"seasons": {}}
+        self.data[country][league_name]["seasons"][season_name] = full_url
 
     def closed(self, reason):
         # Save the data to a JSON file when the spider is closed
