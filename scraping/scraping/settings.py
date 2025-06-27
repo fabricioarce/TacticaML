@@ -14,6 +14,18 @@ NEWSPIDER_MODULE = "scraping.spiders"
 
 ADDONS = {}
 
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_START_DELAY = 10
+AUTOTHROTTLE_MAX_DELAY = 60
+AUTOTHROTTLE_TARGET_CONCURRENCY = 1.00
+
+# USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+
+# DOWNLOADER_MIDDLEWARES = {
+#     'rotating_proxies.middlewares.RotatingProxyMiddleware': 300,
+#     'rotating_proxies.middlewares.BanDetectionMiddleware': 301,
+# }
+# ROTATING_PROXY_LIST_PATH = 'proxies.txt'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "scraping (+http://www.yourdomain.com)"
