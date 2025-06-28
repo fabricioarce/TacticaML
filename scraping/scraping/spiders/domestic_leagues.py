@@ -19,9 +19,11 @@ class DomesticLeaguesSpider(scrapy.Spider):
         15: "Domestic Youth Leagues"
     } 
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, max_items=3, *args, **kwargs):
         # Initialize the spider with an empty data structure
         self.data = {}
+        # self.max_items = int(max_items) # Tests
+        # self.processed = 0 # Tests
 
     def parse(self, response):
         # Extract the div indices for the categories we are interested in
@@ -33,7 +35,7 @@ class DomesticLeaguesSpider(scrapy.Spider):
                 if gender == 'M':
                     league_link = row.xpath(".//th/a/@href").get()
                     league_name = row.xpath(".//th/a/text()").get()
-
+                    # self.processed += 1 # Tests
                     yield response.follow(
                         url=league_link,
                         callback=self.leagues_seasons,
@@ -45,6 +47,8 @@ class DomesticLeaguesSpider(scrapy.Spider):
         category = response.meta["category"]
         season_links = response.xpath("/html/body/div[1]/div[6]/div[2]/div[2]/table/tbody/tr/th")
 
+        country = response.xpath("/html/body/div[1]/div[3]/div[1]/div[2]/p[1]/a/text()").get()
+
         # Iterate through each season link
         for season_link in season_links:
             # Extract the season URL
@@ -55,13 +59,14 @@ class DomesticLeaguesSpider(scrapy.Spider):
             match = re.search(r'/(\d{4}-\d{2})', season_url)
             season_name = match.group(1) if match else "Unknown Season"
 
-        if country not in self.data:
-            self.data[country] = {}
-        if league_name not in self.data[country]:
-            self.data[country][league_name] = {"seasons": {}}
-        self.data[country][league_name]["seasons"][season_name] = full_url
+
+            if country not in self.data:
+                self.data[country] = {}
+            if league_name not in self.data[country]:
+                self.data[country][league_name] = {"seasons": {}}
+            self.data[country][league_name]["seasons"][season_name] = full_url
 
     def closed(self, reason):
         # Save the data to a JSON file when the spider is closed
-        with open("/data/domestic_leagues_data.json", "w") as f:
+        with open("domestic_leagues_data.json", "w") as f:
             json.dump(self.data, f, indent=4)
