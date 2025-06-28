@@ -1,0 +1,16 @@
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, Date, Time, ForeignKey, Text
+from sqlalchemy.ext.declarative import relationship, declarative_base
+
+Base = declarative_base()
+
+class KeyDuel(Base):
+    __tablename__ = 'key_duels'
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    match_id = Column(BigInteger, ForeignKey('matches.id'))
+    player1_id = Column(BigInteger, ForeignKey('players.id'))
+    player2_id = Column(BigInteger, ForeignKey('players.id'))
+    duel_type = Column(Text)
+
+    player1 = relationship("Player", foreign_keys=[player1_id], back_populates="duels_as_player1")
+    player2 = relationship("Player", foreign_keys=[player2_id], back_populates="duels_as_player2")
