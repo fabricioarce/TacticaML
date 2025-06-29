@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, Date, Time, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, String, Boolean, Float, Date, Time, ForeignKey, Text
 from sqlalchemy.ext.declarative import relationship, declarative_base
 
 Base = declarative_base()
@@ -6,7 +6,7 @@ Base = declarative_base()
 class Team(Base):
     __tablename__ = 'teams'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True, autoincrement=True)
     name = Column(Text, nullable=False)
     city = Column(Text)
     country = Column(Text)

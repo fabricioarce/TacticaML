@@ -7,8 +7,8 @@ class Competition(Base):
     __tablename__ = 'competitions'
 
     id = Column(String, primary_key=True, autoincrement=True)
-    name = Column(Text)
-    type = Column(Text)
-    stage = Column(Text)
+    player_name = Column(Text)
+    player_id = Column(String, ForeignKey('teams.id'))
+    player_season_id = Column(Text)
 
     matches = relationship("Match", back_populates="competition")

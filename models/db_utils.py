@@ -19,3 +19,6 @@ def get_or_create_team(session, name, country=None, city=None):
         team.city = city
         session.commit()
     return team
+
+def get_or_create_plater(session, player_name):
+    player_season = session.query()

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, Date, Time, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, String, Boolean, Float, Date, Time, ForeignKey, Text
 from sqlalchemy.ext.declarative import relationship, declarative_base
 
 Base = declarative_base()
@@ -6,9 +6,9 @@ Base = declarative_base()
 class TeamMatchStat(Base):
     __tablename__ = 'team_match_stats'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    match_id = Column(BigInteger, ForeignKey('matches.id'))
-    team_id = Column(BigInteger, ForeignKey('teams.id'))
+    id = Column(String, primary_key=True, autoincrement=True)
+    match_id = Column(String, ForeignKey('matches.id'))
+    team_id = Column(String, ForeignKey('teams.id'))
     possession = Column(Float)
     corners = Column(Integer)
     fouls = Column(Integer)

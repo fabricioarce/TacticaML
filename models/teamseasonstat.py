@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, Float, Date, Time, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, String, Boolean, Float, Date, Time, ForeignKey, Text
 from sqlalchemy.ext.declarative import relationship, declarative_base
 
 Base = declarative_base()
@@ -6,8 +6,8 @@ Base = declarative_base()
 class TeamSeasonStat(Base):
     __tablename__ = 'team_season_stats'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    team_id = Column(BigInteger, ForeignKey('teams.id'))
+    id = Column(String, primary_key=True, autoincrement=True)
+    team_id = Column(String, ForeignKey('teams.id'))
     season = Column(Text)
     matches = Column(Integer)
     points = Column(Integer)
