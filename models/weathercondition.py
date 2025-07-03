@@ -6,7 +6,7 @@ Base = declarative_base()
 class WeatherCondition(Base):
     __tablename__ = 'weather_conditions'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     match_id = Column(String, ForeignKey('matches.id'))
     temperature = Column(Float)
     humidity = Column(Float)

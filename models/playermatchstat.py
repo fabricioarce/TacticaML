@@ -6,7 +6,7 @@ Base = declarative_base()
 class PlayerMatchStat(Base):
     __tablename__ = 'player_match_stats'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     player_id = Column(String, ForeignKey('players.id'))
     match_id = Column(String)
     minutes_played = Column(Integer)

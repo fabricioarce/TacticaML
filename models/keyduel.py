@@ -6,7 +6,7 @@ Base = declarative_base()
 class KeyDuel(Base):
     __tablename__ = 'key_duels'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     match_id = Column(String, ForeignKey('matches.id'))
     player1_id = Column(String, ForeignKey('players.id'))
     player2_id = Column(String, ForeignKey('players.id'))

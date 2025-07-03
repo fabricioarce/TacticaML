@@ -7,7 +7,7 @@ Base = declarative_base()
 class PlayerSeasonStat(Base):
     __tablename__ = 'player_season_stats'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     player_id = Column(String, ForeignKey('players.id'))
     team_season_id = Column(String, ForeignKey('team_season_stats.id'))
 
@@ -25,12 +25,7 @@ class PlayerSeasonStat(Base):
     gminuspk = Column(Integer)
     pk = Column(Integer)
     pkatt = Column(Integer)
-
-    # Tarjetas
-    crdy = Column(Integer)
-    crdr = Column(Integer)
-    secondcrdy = Column(Integer)
-
+    
     # xG y variantes
     xg = Column(Float)
     npxg = Column(Float)
@@ -39,10 +34,6 @@ class PlayerSeasonStat(Base):
     npgminusnpxg = Column(Float)
 
     npxg_xag = Column(Float)
-
-    # Progresiones
-    prgc = Column(Integer)
-    prgr = Column(Integer)
 
     # Tiros
     sh = Column(Integer)
@@ -132,9 +123,9 @@ class PlayerSeasonStat(Base):
     # Defensive actions
     tackles_tkl = Column(Integer)
     tackles_tklw = Column(Integer)
-    def_3rd = Column(Integer)
-    mid_3rd = Column(Integer)
-    att_3rd = Column(Integer)
+    def_def_3rd = Column(Integer)
+    def_mid_3rd = Column(Integer)
+    def_att_3rd = Column(Integer)
     challenges_tkl = Column(Integer)
     challenges_att = Column(Integer)
     tackles_tkl_percentage = Column(Float)
@@ -201,8 +192,7 @@ class PlayerSeasonStat(Base):
     fls = Column(Integer)
     fld = Column(Integer)
     off = Column(Integer)
-    crs = Column(Integer)
-    interceptions = Column(Integer)
+    m_crs = Column(Integer)
     tkl_won = Column(Integer)
     pk_won = Column(Integer)
     og = Column(Integer)

@@ -1,20 +1,29 @@
 import scrapy
 import json
+import os
 
 class TeamScheduleSpiderSpider(scrapy.Spider):
+    """
+    A Scrapy spider to scrape football team and player stats from fbref.com.
+    """
     name = "team_schedule_spider"
     allowed_domains = ["fbref.com"]
     start_urls = ["https://fbref.com/en/comps"]
 
     def start_requests(self):
-        # Cargar el JSON actualizado
-        with open("domestic_leagues_data.json", "r") as f:
+        """
+        Loads league data from a JSON file and yields requests for each season's page.
+        """
+        # Load the updated JSON file.
+        with open("/home/n0de/Documents/syncthing/Programacion-de-proyectos/predict/data/domestic_leagues_data.json", "r") as f:
             data = json.load(f)
 
+        # Iterate through each category (e.g., "Spain"), league (e.g., "La Liga"), and season.
         for category, leagues in data.items():  # "España"
             for league_name, league_info in leagues.items():  # "LaLiga"
                 seasons = league_info.get("seasons", {})
                 for season_name, url in seasons.items():
+                    # Yield a request for each season's URL.
                     yield scrapy.Request(
                         url=url,
                         callback=self.parse,
@@ -26,205 +35,240 @@ class TeamScheduleSpiderSpider(scrapy.Spider):
                     )
 
     def parse(self, response):
+        """
+        Parses the league page to find links to individual team pages and follows them.
+        """
         rows = response.xpath("/html/body/div[1]/div[6]/div[3]/div[4]/div[1]/table/tbody/tr")
         for row in rows:
-            team_name = response.xpath(".//td[1]/a/text()")
-            team_url  = response.xpath(".//td[1]/a/@href")
+            team_name = response.xpath(".//td[1]/a/text()").get()
+            team_url  = response.xpath(".//td[1]/a/@href").get()
 
             yield response.follow(
                 url=team_url,
                 callback=self.pas,
+                meta={
+                    "team_name": team_name,
+                    "team_url": team_url
+                }
             )
 
     def pas(self, response):
-        all_compettion = response.xpath("/html/body/div[4]/div[6]/div[2]/div[1]/a/@href")
+        """
+        On a team page, finds and follows the link to the 'All Competitions' stats page.
+        """
+        all_competition = response.xpath("/html/body/div[4]/div[6]/div[2]/div[1]/a/@href").get()
         
         yield response.follow(
-            url=all_compettion,
-            callback=self.team_and_season_player
+            url=all_competition,
+            callback=self.team_and_season_player,
+            meta={
+                "team_name": response.meta["team_name"],
+                "team_url": response.meta["team_url"]
+            }
         )
 
     def team_and_season_player(self, response):
+        """
+        A dispatcher method that calls methods to scrape both team and player data.
+        """
         yield from self.team(response)
         yield from self.player_season(response)
 
     def team(self, response):
-        season = response.xpath("/html/body/div[4]/div[3]/div[1]/div[2]/h1/span[1]/text()")
+        """
+        Extracts and yields basic team information (ID and name).
+        """
+        season = response.xpath("/html/body/div[4]/div[3]/div[1]/div[2]/h1/span[1]/text()").get()
+        
         team_name = season.split()
-        team_id = response.url
-        team_id = team_id.split("/")
+        season_id = response.url
+        team_id = season_id.split("/")[-3]
+        season_id = season_id.split("/")
+        season_id = season_id[-3] + "_" + season_id[-2]
 
         yield {
-            "team_id": team_id[5],
+            "should_create_team": True,
             "name": team_name[1],
-            "should_create_team": True
+            "team_id": team_id
+        }
+        yield {
+            "should_create_team_season": True,
+            "season_id": season_id,
+            "team_id": team_id
         }
 
     def player_season(self, response):
-        season = response.xpath("/html/body/div[4]/div[3]/div[1]/div[2]/h1/span[1]/text()")
-        team_name = season.split()
+        """
+        Scrapes multiple tables of player statistics for a given team and season.
+        It calls `extraer_tabla` for each stats table.
+        """
+        team_season_id = response.url
+        team_season_id = team_season_id.split("/")
+        team_season_id = team_season_id[-3] + "_" + team_season_id[-2]
+        jugadores = {}
 
-        campos = [
-            # Datos generales
-            "pos", "age", "mp", "starts", "min", "ninetys",
-            # Goles y asistencias
-            "gls", "ast", "gplusa", "gminuspk", "pk", "pkatt",
-            # Tarjetas
-            "crdy", "crdr", "secondcrdy",
-            # xG y variantes
-            "xg", "npxg", "xag", "npxg_xag",
-            # Progresiones
-            "prgc", "prgp", "prgr",
-            # Tiros
-            "sh", "sot", "sot_pct", "sh_per90", "sot_per90", "g_sh", "g_sot", "dist", "fk",
-            # xG adicionales
-            "npxg_sh", "g_xg", "npg_xg",
-            # Pases
+        # Table 1: Standard Stats
+        campos_std = ["pos", "age"]
+        self.extraer_tabla(
+            response,
+            '//div[6]/div[3]/div[7]/div[1]/table/tbody/tr',
+            campos_std,
+            jugadores,
+            td_offset=1  # Data starts in the second td, so use offset=1
+        )
+
+        # Table 2: Shooting Stats
+        campos_shoot = [
+            "gls", "sh", "sot", "sot_pct", "sh_per90", "sot_per90", "g_sh", "g_sot", "dist", "fk",
+            "pk", "pkatt", "xg", "npxg", "npxgpersh", "glsminusxg", "npgminusnpxg"
+        ]
+        self.extraer_tabla(
+            response,
+            '//div[6]/div[11]/div[7]/div[1]/table/tbody/tr',
+            campos_shoot,
+            jugadores,
+            td_offset=4  # Data starts in the fifth td
+        )
+
+        # Table 3: Passing Stats
+        campos_pass = [
             "cmp", "att", "cmp_pct", "totdist", "prgdist",
-            # Pases por zona
             "cmp_short", "att_short", "cmp_pct_short",
             "cmp_medium", "att_medium", "cmp_pct_medium",
             "cmp_long", "att_long", "cmp_pct_long",
-            # Asistencias avanzadas
-            "xag_adv", "xa", "a_xag", "kp", "third", "ppa", "crspa", "prgp_adv",
-            # Centros y jugadas
-            "att_adv", "live", "dead", "fk_adv", "tb", "sw", "crs", "ti", "ck", "in_adv", "out_adv", "str_adv",
-            # Ofensivas y bloqueos
-            "off", "blocks",
-            # SCA/GCA
-            "sca", "sca90", "passlive", "passdead", "to", "sh_adv", "fld", "def_adv",
-            "gca", "gca90", "passlive_gca", "passdead_gca", "to_gca", "sh_gca", "fld_gca", "def_gca",
-            # Defensa
-            "tkl", "tklw", "def_3rd", "mid_3rd", "att_3rd", "tkl_adv", "att_adv2", "tkl_pct", "lost", "blocks_adv", "sh_block", "pass_block", "interceptions", "tkl_int", "clr", "err",
-            # Conducción y toques
-            "touches", "def_pen", "def_3rd_touch", "mid_3rd_touch", "att_3rd_touch", "att_pen", "live_touch", "att_touch", "succ", "succ_pct", "tkld", "tkld_pct", "carries", "totdist_carry", "prgdist_carry", "prgc_carry", "third_carry", "cpa", "mis", "dis", "rec", "prgr_carry",
-            # Minutos y partidos
-            "mp2", "min2", "mn_mp", "min_pct", "ninetys2", "starts2", "mn_start", "compl", "subs", "mn_sub", "unsub", "ppm", "ong", "onga", "plus_minus", "plus_minus90", "on_off", "onxg", "onxga", "xg_plus_minus", "xg_plus_minus90", "on_off_adv",
-            # Faltas y disciplina
-            "crdy2", "crdr2", "twocrdy", "fls", "fld2", "off2", "crs2", "int2", "tklw2", "pkwon", "pkcon", "og", "recov", "won", "lost2", "won_pct"
+            "ast", "xag", "xa", "aminusxag", "kp", "ft", "ppa", "crspa", "prgp"
         ]
-        # Estandar: '//div[6]/div[?]/div[7]/div[1]/table/tbody/tr'
-        # Tabla 1: estadísticas estándar
-        rows_std = response.xpath('//div[6]/div[3]/div[7]/div[1]/table/tbody/tr')
-        for row in rows_std:
-            player_name = row.xpath('./th/a/text()').get()
-            player_link = row.xpath('./th/a/@href').get()
-            if not player_name:
-                continue
-            key = player_link or player_name
-            jugadores[key] = {
-                "player_name": player_name,
-                "player_link": player_link,
-                
-                "pos": row.xpath("./td[2]/text()").get(),
-                "age": row.xpath("./td[3]/text()").get(),
-                "mp": row.xpath("./td[4]/text()").get(),
-                "starts": row.xpath("./td[5]/text()").get(),
-                "min": row.xpath("./td[6]/text()").get(),
-                "ninetys": row.xpath("./td[7]/text()").get(),
-            }
+        self.extraer_tabla(
+            response,
+            '//div[6]/div[12]/div[7]/div[1]/table/tbody/tr',
+            campos_pass,
+            jugadores,
+            td_offset=4
+        )
+
+        # Table 4: Pass Type Stats
+        campos_pass_type = [
+            "live", "dead", "pfk", "tb", "sw", "crs", "ti", "ck", "pass_off", "blocks",
+            "corner_in", "corner_out", "corner_str"
+        ]
+        self.extraer_tabla(
+            response,
+            '//div[6]/div[14]/div[7]/div[1]/table/tbody/tr',
+            campos_pass_type,
+            jugadores,
+            td_offset=4
+        )
         
-        # Table 2: Shoots table 
-        rows_shoot = response.xpath('//div[6]/div[11]/div[7]/div[1]/table/tbody/tr')
-        for row in rows_shoot:
+        campos_goal_and_shot_creation = [
+            "sca", "sca_per90", "sca_passlive", "sca_passdead", "sca_to", "sca_sh", "sca_fld", "sca_def", "gca", "gca_per90", "gca_passlive", "gca_passdead", "gca_sh", "gca_to", "gca_fld", "gca_def" 
+        ]
+
+        self.extraer_tabla(
+            response,
+            '//div[6]/div[15]/div[7]/div[1]/table/tbody/tr',
+            campos_goal_and_shot_creation,
+            jugadores,
+            td_offset=4
+        )
+        
+        campos_defensive_actions = [
+            "tackles_tkl", "tackles_tklw", "def_3rd", "mid_3rd", "att_3rd", "challenges_tkl", "challenges_att", "tackles_tkl_percentage", "challenges_lost", "def_blocks", "def_blocks_sh", "def_blocks_pass", "interceptions", "tklplusinterceptions", "clearences", "errors"
+        ]
+
+        self.extraer_tabla(
+            response,
+            '//div[6]/div[16]/div[7]/div[1]/table/tbody/tr',
+            campos_defensive_actions,
+            jugadores,
+            td_offset=4
+        )
+
+        campos_possesion = [
+            "touches", "def_pen", "def_3rd", "mid_3rd", "att_3rd", "att_pen", "touches_live", "tale_on_att", "success", "success_pct", "tkld", "tkld_pct", "carries", "tot_dist", "prg_dist", "prgc", "one_third", "cpa", "mis", "dis"
+        ]
+
+        self.extraer_tabla(
+            response,
+            '//div[6]/div[17]/div[7]/div[1]/table/tbody/tr',
+            campos_possesion,
+            jugadores,
+            td_offset=4
+        )
+        
+        campos_playing_time = [
+            "mp", "min", "minpermp", "min_pct", "ninetys", "starts", "minperstart", "compl", "subs", "minpersub", "unsub", "ppm", "ong", "onga", "plusminus", "plusminus_per90", "onoff", "onxg", "onxga", "xgplusminus", "xgplusminus_per90", "xg_onoff"
+        ]
+
+        self.extraer_tabla(
+            response,
+            '//div[6]/div[18]/div[7]/div[1]/table/tbody/tr',
+            campos_playing_time,
+            jugadores,
+            td_offset=4
+        )
+        
+        campos_miscellaneous = [
+            "crdy", "crdr", "secondcrdy", "fls", "fld", "off", "m_crs", "tkl_won", "pk_won", "og", "recov", "won", "lost", "won_pct"
+        ]
+
+        self.extraer_tabla(
+            response,
+            '//div[6]/div[19]/div[7]/div[1]/table/tbody/tr',
+            campos_miscellaneous,
+            jugadores,
+            td_offset=4
+        )
+        
+        # To add more tables, follow this pattern:
+        # campos_nueva_tabla = ["campo1", "campo2", ...]
+        # self.extraer_tabla(response, 'XPATH_TO_THE_TABLE', campos_nueva_tabla, jugadores, td_offset=...)
+        
+        # After processing all rows for the current table, yield all player items.
+        # stat = PlayerSeasonStat(player_id=player_id, team_season_id=team_season_id, **stat_fields)
+        for player in jugadores.values():
+            yield {
+                    "should_create_player": True,
+                    "player_id": player["player_id"],
+                    "name": player["player_name"],
+                    "should_create_player_stat": True,
+                    "team_season_id": team_season_id,
+                    "player_stat_fields": player["stats"],
+                    }
+
+    def extraer_tabla(self, response, xpath_tabla, campos, jugadores, td_offset=0):
+        """
+        Extracts data from a player stats table and adds it to the 'jugadores' dictionary.
+
+        Args:
+            response: The Scrapy response object.
+            xpath_tabla (str): XPath to the table rows (specifically the 'All Competitions' section).
+            campos (list): A list of field names corresponding to the table columns.
+            jugadores (dict): The accumulator dictionary for player data.
+            td_offset (int): The column offset if data doesn't start in the first 'td' (e.g., due to hidden columns).
+        """
+        rows = response.xpath(xpath_tabla)
+        for row in rows:
             player_link = row.xpath('./th/a/@href').get()
             player_name = row.xpath('./th/a/text()').get()
-            key = player_link or player_name
-            if key not in jugadores:
-                jugadores[key] = {
-                    "player_name": player_name,
-                    "player_link": player_link,
-                }
-            # get the info of the shoot table
-            # Goals
-            jugadores[key]["gls"] = row.xpath('./td[5]/text()').get()
-            jugadores[key]["sh"] = row.xpath('./td[6]/text()').get()
-            jugadores[key]["sot"] = row.xpath('./td[7]/text()').get()
-            jugadores[key]["sot_pct"] = row.xpath('./td[8]/text()').get()
-            jugadores[key]["sh_per90"] = row.xpath('./td[9]/text()').get()
-            jugadores[key]["sot_per90"] = row.xpath('./td[10]/text()').get()
-            jugadores[key]["g_sh"] = row.xpath('./td[11]/text()').get()
-            jugadores[key]["g_sot"] = row.xpath('./td[12]/text()').get()
-            jugadores[key]["dist"] = row.xpath('./td[13]/text()').get()
-            jugadores[key]["fk"] = row.xpath('./td[14]/text()').get()
-            jugadores[key]["pk"] = row.xpath('./td[15]/text()').get()
-            jugadores[key]["pkatt"] = row.xpath('./td[16]/text()').get()
-            # xG y variantes
-            jugadores[key]["xg"] = row.xpath('./td[17]/text()').get()
-            jugadores[key]["npxg"] = row.xpath('./td[18]/text()').get()
-            jugadores[key]["npxgpersh"] = row.xpath('./td[19]/text()').get()
-            jugadores[key]["glsminusxg"] = row.xpath('./td[20]/text()').get()
-            jugadores[key]["npgminusnpxg"] = row.xpath('./td[21]/text()').get()
-
-        rows_pass = response.xpath('//div[6]/div[12]/div[7]/div[1]/table/tbody/tr')
-        for row in rows_shoot:
-            player_link = row.xpath('./th/a/@href').get()
-            player_name = row.xpath('./th/a/text()').get()
-            key = player_link or player_name
-            if key not in jugadores:
-                jugadores[key] = {
-                    "player_name": player_name,
-                    "player_link": player_link,
-                }
-            # Total
-            jugadores[key]["cmp"] = row.xpath('./td[5]/text()').get()
-            jugadores[key]["att"] = row.xpath('./td[6]/text()').get()
-            jugadores[key]["cmp_pct"] = row.xpath('./td[7]/text()').get()
-            jugadores[key]["totdist"] = row.xpath('./td[8]/text()').get()
-            jugadores[key]["prgdist"] = row.xpath('./td[9]/text()').get()
-
-                # Short
-            jugadores[key]["cmp_short"] = row.xpath('./td[10]/text()').get()
-            jugadores[key]["att_short"] = row.xpath('./td[11]/text()').get()
-            jugadores[key]["cmp_pct_short"] = row.xpath('./td[12]/text()').get()
-
-                # medium
-            jugadores[key]["cmp_medium"] = row.xpath('./td[13]/text()').get()
-            jugadores[key]["att_medium"] = row.xpath('./td[14]/text()').get()
-            jugadores[key]["cmp_pct_medium"] = row.xpath('./td[15]/text()').get()
+            player_id = None
             
-                # long
-            jugadores[key]["cmp_long"] = row.xpath('./td[16]/text()').get()
-            jugadores[key]["att_long"] = row.xpath('./td[17]/text()').get()
-            jugadores[key]["cmp_pct_long"] = row.xpath('./td[18]/text()').get()
-
-            # Expected
-            jugadores[key]["ast"] = row.xpath('./td[19]/text()').get()
-            jugadores[key]["xag"] = row.xpath('./td[20]/text()').get()
-            jugadores[key]["xa"] = row.xpath('./td[21]/text()').get()
-            jugadores[key]["aminusxag"] = row.xpath('./td[22]/text()').get()
-            jugadores[key]["kp"] = row.xpath('./td[23]/text()').get()
-            jugadores[key]["ft"] = row.xpath('./td[24]/text()').get()
-            jugadores[key]["ppa"] = row.xpath('./td[25]/text()').get()
-            jugadores[key]["crspa"] = row.xpath('./td[26]/text()').get()
-            jugadores[key]["prgp"] = row.xpath('./td[27]/text()').get()
-
-        rows_pass_type = response.xpath('//div[6]/div[13]/div[7]/div[1]/table/tbody/tr')
-        for row in rows_shoot_type:
-            player_link = row.xpath('./th/a/@href').get()
-            player_name = row.xpath('./th/a/text()').get()
-            key = player_link or player_name
+            if player_link:
+                segments = player_link.split('/')
+                if len(segments) >= 3:
+                    player_id = segments[-2]
+            
+            # Use the player link or name as a unique key.
+            key = player_id or player_link or player_name
+            if not key:
+                continue
+            # If the player is not yet in the dictionary, add them.
             if key not in jugadores:
                 jugadores[key] = {
+                    "player_id": player_id,
                     "player_name": player_name,
                     "player_link": player_link,
+                    "stats": {}
                 }
-            # Total
-            jugadores[key]["live"] = row.xpath('./td[5]/text()').get()
-            jugadores[key]["dead"] = row.xpath('./td[6]/text()').get()
-            jugadores[key]["pfk"] = row.xpath('./td[7]/text()').get()
-            jugadores[key]["tb"] = row.xpath('./td[8]/text()').get()
-            jugadores[key]["sw"] = row.xpath('./td[9]/text()').get()
-            jugadores[key]["crs"] = row.xpath('./td[10]/text()').get()
-            jugadores[key]["ti"] = row.xpath('./td[11]/text()').get()
-            jugadores[key]["ck"] = row.xpath('./td[12]/text()').get()
-            jugadores[key]["off"] = row.xpath('./td[13]/text()').get()
-            jugadores[key]["blocks"] = row.xpath('./td[14]/text()').get()
-            jugadores[key]["corner_in"] = row.xpath('./td[16]/text()').get()
-            jugadores[key]["corner_out"] = row.xpath('./td[17]/text()').get()
-            jugadores[key]["corner_str"] = row.xpath('./td[18]/text()').get()
-
-        
-
-        for item in jugadores.values():
-            yield item
+            # Extract each stat and add it to the player's dictionary.
+            for idx, campo in enumerate(campos, start=1 + td_offset):
+                jugadores[key]["stats"][campo] = row.xpath(f'./td[{idx}]/text()').get()

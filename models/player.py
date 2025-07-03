@@ -6,14 +6,8 @@ Base = declarative_base()
 class Player(Base):
     __tablename__ = 'players'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     name = Column(Text, nullable=False)
-    team_id = Column(String, ForeignKey('teams.id'))
-    position = Column(Text)
-    age = Column(Integer)
-    height = Column(Float)
-    weight = Column(Float)
-    international_experience = Column(Boolean)
 
     team = relationship("Team", back_populates="players")
     season_stats = relationship("PlayerSeasonStat", back_populates="player")

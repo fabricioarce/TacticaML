@@ -6,7 +6,7 @@ Base = declarative_base()
 class TravelCondition(Base):
     __tablename__ = 'travel_conditions'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     team_id = Column(String, ForeignKey('teams.id'))
     match_id = Column(String, ForeignKey('matches.id'))
     days_of_rest = Column(Integer)

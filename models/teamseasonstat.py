@@ -6,7 +6,7 @@ Base = declarative_base()
 class TeamSeasonStat(Base):
     __tablename__ = 'team_season_stats'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     team_id = Column(String, ForeignKey('teams.id'))
     season = Column(Text)
     matches = Column(Integer)
@@ -25,3 +25,4 @@ class TeamSeasonStat(Base):
     expected_goals = Column(Float)
     expected_goals_against = Column(Float)
     expected_goal_difference = Column(Float)
+    player_season_stats = relationship("PlayerSeasonStat", back_populates="team_season")

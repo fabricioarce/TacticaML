@@ -6,7 +6,7 @@ Base = declarative_base()
 class Team(Base):
     __tablename__ = 'teams'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     name = Column(Text, nullable=False)
     city = Column(Text)
     country = Column(Text)

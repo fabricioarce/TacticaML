@@ -14,12 +14,16 @@ NEWSPIDER_MODULE = "scraping.spiders"
 
 ADDONS = {}
 
-AUTOTHROTTLE_ENABLED = True
-AUTOTHROTTLE_START_DELAY = 10
-AUTOTHROTTLE_MAX_DELAY = 60
-AUTOTHROTTLE_TARGET_CONCURRENCY = 1.00
+DOWNLOAD_DELAY = 10
+CONCURRENT_REQUESTS = 1
 
-# USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_START_DELAY = 15
+AUTOTHROTTLE_MAX_DELAY = 120
+AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
+AUTOTHROTTLE_DEBUG = True
+
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
 # DOWNLOADER_MIDDLEWARES = {
 #     'rotating_proxies.middlewares.RotatingProxyMiddleware': 300,
@@ -45,7 +49,7 @@ ROBOTSTXT_OBEY = True
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
+COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False

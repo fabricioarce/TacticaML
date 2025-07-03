@@ -6,7 +6,7 @@ Base = declarative_base()
 class Referee(Base):
     __tablename__ = 'referees'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     name = Column(Text)
     tendency_to_give_cards = Column(Float)
     tendency_to_favor_home_team = Column(Float)

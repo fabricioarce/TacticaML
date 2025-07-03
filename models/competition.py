@@ -6,7 +6,7 @@ Base = declarative_base()
 class Competition(Base):
     __tablename__ = 'competitions'
 
-    id = Column(String, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True)
     name = Column(Text)
     type = Column(Text)
     stage = Column(Text)
