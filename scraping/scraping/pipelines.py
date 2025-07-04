@@ -17,7 +17,7 @@ from models.playerseasonstat import PlayerSeasonStat
 class NameTeamPipeline:
     def open_spider(self, spider):
         # Conect with PostgreSQL
-        engine = create_engine("postgresql+psycopg2://fabri:supersegura123@localhost:5432/futbol_stats")
+        engine = create_engine("sqlite:///../../data/futbol_stats.db")
 
         # Create Table if it doesn't exist
         Base.metadata.create_all(engine)
