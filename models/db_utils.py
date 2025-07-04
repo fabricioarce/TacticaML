@@ -4,7 +4,7 @@ from models import *
 
 # 
 def get_session():
-    engine = create_engine("postgresql+psycopg2://fabri:supersegura123@localhost:5432/futbol_stats")
+    engine = create_engine("sqlite:///../../data/futbol_stats.db")
     Session = sessionmaker(bind=engine)
     return Session()
 
