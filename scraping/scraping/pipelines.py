@@ -12,15 +12,17 @@ from models.team import Team
 from models.teamseasonstat import TeamSeasonStat
 from models.player import Player
 from models.playerseasonstat import PlayerSeasonStat
-
+from sqlalchemy import create_engine
+from models.base import Base
 
 class NameTeamPipeline:
     def open_spider(self, spider):
         # Conect with PostgreSQL
-        engine = create_engine("sqlite:///../../data/futbol_stats.db")
+        engine = create_engine("sqlite:///futbol_stats.db")
 
         # Create Table if it doesn't exist
         Base.metadata.create_all(engine)
+        print("Engine created")
 
         # Create session
         Session = sessionmaker(bind=engine)
@@ -31,6 +33,7 @@ class NameTeamPipeline:
         self.session.close()
 
     def process_item(self, item, spider):
+        print("Procesando item:", item)
         team = None
         if item.get("should_create_team"):
             team = get_or_create_team(

@@ -25,6 +25,10 @@ AUTOTHROTTLE_DEBUG = True
 
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
+ITEM_PIPELINES = {
+    'scraping.pipelines.NameTeamPipeline': 300,
+}
+
 # DOWNLOADER_MIDDLEWARES = {
 #     'rotating_proxies.middlewares.RotatingProxyMiddleware': 300,
 #     'rotating_proxies.middlewares.BanDetectionMiddleware': 301,
