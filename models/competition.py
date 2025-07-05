@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, String, String, Boolean, Float, Date, Time, ForeignKey, Text
-from sqlalchemy.ext.declarative import relationship, declarative_base
-
-Base = declarative_base()
+from sqlalchemy.orm import relationship
+from models.base import Base
 
 class Competition(Base):
     __tablename__ = 'competitions'

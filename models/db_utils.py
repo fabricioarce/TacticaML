@@ -1,10 +1,27 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import *
+from models.db_utils import create_engine
+from sqlalchemy import create_engine
+from models.base import Base
+from models.team import Team
+from models.teamseasonstat import TeamSeasonStat
+from models.player import Player
+from models.playerseasonstat import PlayerSeasonStat
+from models.match import Match
+from models.referee import Referee
+from models.travelcondition import TravelCondition
+from models.competition import Competition
+from models.keyduel import KeyDuel
 
 # 
+def get_engine():
+    engine = create_engine("sqlite:///futbol_stats.db")
+    Base.metadata.create_all(engine)
+    print("Engine created")
+    return engine
+
 def get_session():
-    engine = create_engine("sqlite:///../../data/futbol_stats.db")
+    engine = get_engine()
     Session = sessionmaker(bind=engine)
     return Session()
 
@@ -40,7 +57,7 @@ def get_or_create_player(session, player_id=None, name=None):
     else:
         raise ValueError("Debes proporcionar player_id o name")
     if not player:
-        player = Player(id=player_id, name=name, position=position)
+        player = Player(id=player_id, name=name)
         session.add(player)
         session.commit()
     return player

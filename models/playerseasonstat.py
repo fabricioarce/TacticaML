@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, declarative_base
 
-Base = declarative_base()
+from models.base import Base
 
 class PlayerSeasonStat(Base):
     __tablename__ = 'player_season_stats'
